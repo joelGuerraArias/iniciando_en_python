@@ -1,0 +1,79 @@
+import tkinter as tk
+from tkinter import messagebox, scrolledtext
+import psycopg2
+
+def conectar_db():
+    return psycopg2.connect(
+        dbname="transporte",
+        user="joel",
+        password="camello10@",
+        host="localhost"
+    )
+
+def agregar_usuario():
+    try:
+        conn = conectar_db()
+        cursor = conn.cursor()
+        # Se omite la columna id, ya que se autoincrementa
+        cursor.execute("INSERT INTO pasajero (nombre, direccion, edad) VALUES (%s, %s, %s)",
+                       (nombre_entry.get(), direccion_entry.get(), edad_entry.get()))
+        conn.commit()
+        messagebox.showinfo("Información", "Pasajero agregado exitosamente")
+        nombre_entry.delete(0, tk.END)
+        direccion_entry.delete(0, tk.END)
+        edad_entry.delete(0, tk.END)
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", e)
+    finally:
+        cursor.close()
+        conn.close()
+
+def buscar_usuarios():
+    try:
+        conn = conectar_db()
+        cursor = conn.cursor()
+        busqueda = f"%{busqueda_entry.get()}%"
+        cursor.execute("SELECT * FROM pasajero WHERE nombre ILIKE %s OR direccion ILIKE %s OR CAST(edad AS TEXT) ILIKE %s ORDER BY id",
+                       (busqueda, busqueda, busqueda))
+        registros = cursor.fetchall()
+        vista_texto.delete('1.0', tk.END)
+        for registro in registros:
+            vista_texto.insert(tk.END, f"{registro}\n")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", e)
+    finally:
+        cursor.close()
+        conn.close()
+
+# Interfaz gráfica
+root = tk.Tk()
+root.title("Gestión de Pasajeros")
+root.geometry("720x480")
+
+frame = tk.Frame(root)
+frame.pack(pady=20, padx=20)
+
+tk.Label(frame, text="Nombre").grid(row=0, column=0)
+nombre_entry = tk.Entry(frame)
+nombre_entry.grid(row=0, column=1)
+
+tk.Label(frame, text="Dirección").grid(row=1, column=0)
+direccion_entry = tk.Entry(frame)
+direccion_entry.grid(row=1, column=1)
+
+tk.Label(frame, text="Edad").grid(row=2, column=0)
+edad_entry = tk.Entry(frame)
+edad_entry.grid(row=2, column=1)
+
+tk.Button(frame, text="Agregar Pasajero", command=agregar_usuario).grid(row=3, column=0, columnspan=2, pady=5)
+
+vista_texto = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=10, width=50)
+vista_texto.grid(row=4, column=0, columnspan=2)
+
+tk.Label(frame, text="Buscar Pasajero").grid(row=5, column=0)
+busqueda_entry = tk.Entry(frame)
+busqueda_entry.grid(row=5, column=1)
+
+tk.Button(frame, text="Buscar", command=buscar_usuarios).grid(row=6, column=0, columnspan=2, pady=5)
+
+root.mainloop()
