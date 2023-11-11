@@ -1,0 +1,107 @@
+import tkinter as tk
+from tkinter import messagebox, scrolledtext
+import psycopg2
+
+def conectar_db():
+    return psycopg2.connect(
+        dbname="transporte",
+        user="joel",
+        password="camello10@",
+        host="localhost"
+    )
+
+def agregar_usuario():
+    try:
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO pasajero (id, nombre, direccion, edad) VALUES (%s, %s, %s, %s)",
+                       (id_entry.get(), nombre_entry.get(), direccion_entry.get(), edad_entry.get()))
+        conn.commit()
+        messagebox.showinfo("Información", "Pasajero agregado exitosamente")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", e)
+    finally:
+        cursor.close()
+        conn.close()
+
+def borrar_usuario():
+    try:
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM pasajero WHERE id = %s", (id_entry.get(),))
+        conn.commit()
+        messagebox.showinfo("Información", "Pasajero eliminado exitosamente")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", e)
+    finally:
+        cursor.close()
+        conn.close()
+
+def actualizar_usuario():
+    try:
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE pasajero SET nombre = %s, direccion = %s, edad = %s WHERE id = %s",
+                       (nombre_entry.get(), direccion_entry.get(), edad_entry.get(), id_entry.get()))
+        conn.commit()
+        messagebox.showinfo("Información", "Pasajero actualizado exitosamente")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", e)
+    finally:
+        cursor.close()
+        conn.close()
+
+def ver_usuarios():
+    try:
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pasajero ORDER BY id")
+        registros = cursor.fetchall()
+        vista_texto.delete('1.0', tk.END)
+        for registro in registros:
+            vista_texto.insert(tk.END, f"{registro}\n")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", e)
+    finally:
+        cursor.close()
+        conn.close()
+
+# Interfaz gráfica
+root = tk.Tk()
+root.title("Gestión de Pasajeros")
+root.geometry("720x480")
+
+# Crear un frame para contener los widgets
+frame = tk.Frame(root)
+frame.pack(pady=20, padx=20)
+
+# Etiquetas y campos de entrada
+tk.Label(frame, text="ID").grid(row=0, column=0)
+id_entry = tk.Entry(frame)
+id_entry.grid(row=0, column=1)
+
+tk.Label(frame, text="Nombre").grid(row=1, column=0)
+nombre_entry = tk.Entry(frame)
+nombre_entry.grid(row=1, column=1)
+
+tk.Label(frame, text="Dirección").grid(row=2, column=0)
+direccion_entry = tk.Entry(frame)
+direccion_entry.grid(row=2, column=1)
+
+tk.Label(frame, text="Edad").grid(row=3, column=0)
+edad_entry = tk.Entry(frame)
+edad_entry.grid(row=3, column=1)
+
+# Botones para las operaciones
+tk.Button(frame, text="Agregar Pasajero", command=agregar_usuario).grid(row=4, column=0, pady=5)
+tk.Button(frame, text="Eliminar Pasajero", command=borrar_usuario).grid(row=4, column=1, pady=5)
+tk.Button(frame, text="Actualizar Pasajero", command=actualizar_usuario).grid(row=5, column=0, columnspan=2, pady=5)
+
+# Área de texto con barras de desplazamiento para mostrar los datos
+vista_texto = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=10, width=50)
+vista_texto.grid(row=6, column=0, columnspan=2, pady=10)
+
+# Botón para ver los usuarios
+tk.Button(frame, text="Ver Pasajeros", command=ver_usuarios).grid(row=7, column=0, columnspan=2, pady=5)
+
+root.mainloop()
